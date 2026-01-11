@@ -1,0 +1,49 @@
+{
+  "name": "pai",
+  "description": "PaiLang - Yang's Personal AI Assistant",
+  "model": "claude-sonnet-4",
+  "prompt": "file://steering/identity.md",
+  "tools": ["*"],
+  "allowedTools": ["read", "write", "shell", "glob", "grep", "@anytype/*", "@github/*"],
+  "resources": [
+    "file://steering/**/*.md",
+    "file://skills/**/*.md"
+  ],
+  "includeMcpJson": true,
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/initialize-session.ts"],
+        "timeout_ms": 10000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/load-core-context.ts"],
+        "timeout_ms": 10000
+      }
+    ],
+    "userPromptSubmit": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/update-tab-titles.ts"],
+        "timeout_ms": 5000
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/security-validator.ts"],
+        "matcher": "shell",
+        "timeout_ms": 5000
+      }
+    ],
+    "stop": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/stop-hook.ts"],
+        "timeout_ms": 10000
+      }
+    ]
+  }
+}

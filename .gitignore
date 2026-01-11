@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Environment (secrets)
+.env
+*.local
+pai-kiro/settings/.env
+
+# Build
+dist/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+tmp/
+
+# Secrets (never commit)
+*.pem
+*.key
+credentials.json
+token.json
+
+# Bun
+bun.lockb
+
+# Skills build artifacts
+skills/*/Tools/node_modules/
+skills/*/node_modules/

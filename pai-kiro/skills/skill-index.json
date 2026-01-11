@@ -1,0 +1,102 @@
+{
+  "generated": "2026-01-08T13:54:42.792Z",
+  "totalSkills": 5,
+  "alwaysLoadedCount": 1,
+  "deferredCount": 4,
+  "skills": {
+    "core": {
+      "name": "CORE",
+      "path": "CORE/SKILL.md",
+      "fullDescription": "Personal AI Infrastructure core. AUTO-LOADS at session start. USE WHEN any session begins OR user asks about identity, response format, contacts, stack preferences, security protocols, or asset management.",
+      "triggers": [
+        "any",
+        "session",
+        "begins",
+        "user",
+        "asks",
+        "about",
+        "identity",
+        "response",
+        "format",
+        "contacts",
+        "stack",
+        "preferences",
+        "security",
+        "protocols",
+        "asset",
+        "management"
+      ],
+      "workflows": [],
+      "tier": "always"
+    },
+    "prompting": {
+      "name": "Prompting",
+      "path": "Prompting/SKILL.md",
+      "fullDescription": "Meta-prompting system for dynamic prompt generation using templates, standards, and patterns. USE WHEN meta-prompting, template generation, prompt optimization, or programmatic prompt composition.",
+      "triggers": [
+        "meta-prompting",
+        "template",
+        "generation",
+        "prompt",
+        "optimization",
+        "programmatic",
+        "composition"
+      ],
+      "workflows": [],
+      "tier": "deferred"
+    },
+    "createskill": {
+      "name": "CreateSkill",
+      "path": "CreateSkill/SKILL.md",
+      "fullDescription": "Create and validate skills. USE WHEN create skill, new skill, skill structure, canonicalize. SkillSearch('createskill') for docs.",
+      "triggers": [
+        "create",
+        "skill",
+        "new",
+        "structure",
+        "canonicalize"
+      ],
+      "workflows": [],
+      "tier": "deferred"
+    },
+    "agents": {
+      "name": "Agents",
+      "path": "Agents/SKILL.md",
+      "fullDescription": "Dynamic agent composition and management system. USE WHEN user says create custom agents, spin up custom agents, specialized agents, OR asks for agent personalities, available traits, agent voices. Handles custom agent creation, personality assignment, voice mapping, and parallel agent orchestration.",
+      "triggers": [
+        "user",
+        "says",
+        "create",
+        "custom",
+        "agents",
+        "spin",
+        "specialized",
+        "asks",
+        "for",
+        "agent",
+        "personalities",
+        "available",
+        "traits",
+        "voices"
+      ],
+      "workflows": [],
+      "tier": "deferred"
+    },
+    "browser": {
+      "name": "Browser",
+      "path": "Browser/SKILL.md",
+      "fullDescription": "Code-first browser automation and web verification. USE WHEN browser, screenshot, navigate, web testing, verify UI, VERIFY phase. Replaces Playwright MCP with 99% token savings.",
+      "triggers": [
+        "browser",
+        "screenshot",
+        "navigate",
+        "web",
+        "testing",
+        "verify",
+        "phase"
+      ],
+      "workflows": [],
+      "tier": "deferred"
+    }
+  }
+}

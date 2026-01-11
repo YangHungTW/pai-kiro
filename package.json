@@ -1,0 +1,16 @@
+{
+  "name": "pai-kiro",
+  "version": "1.0.0",
+  "description": "PaiLang - Personal AI Infrastructure for Kiro CLI",
+  "type": "module",
+  "scripts": {
+    "sync": "bun run scripts/sync.ts",
+    "push": "bun run scripts/sync.ts push",
+    "pull": "bun run scripts/sync.ts pull",
+    "status": "bun run scripts/sync.ts status",
+    "setup": "bun run scripts/sync.ts push"
+  },
+  "keywords": ["kiro", "ai", "assistant", "mcp"],
+  "author": "Yang",
+  "license": "MIT"
+}
