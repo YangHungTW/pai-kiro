@@ -7,7 +7,9 @@
   "allowedTools": ["read", "write", "shell", "glob", "grep", "@anytype/*", "@github/*"],
   "resources": [
     "file://../steering/**/*.md",
-    "file://../skills/**/*.md"
+    "file://../skills/**/*.md",
+    "file://../memory/README.md",
+    "file://../memory/state/*.json"
   ],
   "includeMcpJson": true,
   "hooks": {

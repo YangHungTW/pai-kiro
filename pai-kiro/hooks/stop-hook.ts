@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-// $PAI_DIR/hooks/stop-hook.ts
-// Captures main agent work summaries and learnings
+// ~/.kiro/hooks/stop-hook.ts
+// Captures session summaries to memory/history/
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -139,8 +139,8 @@ async function main() {
       process.exit(0);
     }
 
-    const paiDir = process.env.PAI_DIR || join(homedir(), '.config', 'pai');
-    const historyDir = join(paiDir, 'history');
+    const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
+    const historyDir = join(kiroDir, 'memory', 'history');
 
     const isLearning = hasLearningIndicators(response);
     const type = isLearning ? 'LEARNING' : 'SESSION';
@@ -174,7 +174,7 @@ ${truncatedResponse}
 
 ---
 
-*Captured by PAI History System stop-hook*
+*Captured by Memory System*
 `;
 
     writeFileSync(filepath, content);

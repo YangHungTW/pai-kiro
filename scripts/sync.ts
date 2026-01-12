@@ -17,7 +17,7 @@ const PAI_KIRO = join(PROJECT_ROOT, "pai-kiro");
 const HOME_KIRO = join(process.env.HOME!, ".kiro");
 
 // Directories to sync (inside pai-kiro/ → ~/.kiro)
-const SYNC_DIRS = ["steering", "agents", "hooks", "skills"];
+const SYNC_DIRS = ["steering", "agents", "hooks", "skills", "memory", "observability"];
 
 // File extensions that support variable substitution
 const TEXT_EXTENSIONS = [".md", ".json", ".ts", ".yaml", ".yml", ".txt"];
