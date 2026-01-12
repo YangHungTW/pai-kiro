@@ -1,6 +1,6 @@
 {
   "name": "pai",
-  "description": "PaiLang - Yang's Personal AI Assistant",
+  "description": "${PAI_ASSISTANT_NAME} - ${PAI_USER_NAME}'s Personal AI Assistant",
   "model": "claude-sonnet-4",
   "prompt": "file://../steering/identity.md",
   "tools": ["*"],

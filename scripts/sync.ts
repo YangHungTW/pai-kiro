@@ -9,8 +9,8 @@
  */
 
 import { $ } from "bun";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "fs";
+import { join, extname } from "path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const PAI_KIRO = join(PROJECT_ROOT, "pai-kiro");
@@ -18,6 +18,9 @@ const HOME_KIRO = join(process.env.HOME!, ".kiro");
 
 // Directories to sync (inside pai-kiro/ → ~/.kiro)
 const SYNC_DIRS = ["steering", "agents", "hooks", "skills"];
+
+// File extensions that support variable substitution
+const TEXT_EXTENSIONS = [".md", ".json", ".ts", ".yaml", ".yml", ".txt"];
 
 // Load .env file and return env object
 function loadEnv(envPath: string): Record<string, string> {
@@ -50,8 +53,43 @@ function replacePlaceholders(content: string, env: Record<string, string>): stri
   });
 }
 
+// Recursively process all text files in a directory and replace placeholders
+function processDirectory(dir: string, env: Record<string, string>): number {
+  let count = 0;
+
+  if (!existsSync(dir)) return count;
+
+  const entries = readdirSync(dir);
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      count += processDirectory(fullPath, env);
+    } else if (stat.isFile() && TEXT_EXTENSIONS.includes(extname(entry))) {
+      const content = readFileSync(fullPath, "utf-8");
+      const processed = replacePlaceholders(content, env);
+      if (content !== processed) {
+        writeFileSync(fullPath, processed);
+        count++;
+      }
+    }
+  }
+
+  return count;
+}
+
 async function push() {
   console.log("📤 Pushing pai-kiro → ~/.kiro\n");
+
+  const envPath = join(PAI_KIRO, "settings", ".env");
+  const env = loadEnv(envPath);
+
+  // Warn if .env is missing
+  if (!existsSync(envPath)) {
+    console.log(`⚠️  Warning: ${envPath} not found`);
+    console.log(`   Copy .env.example to .env and fill in your values\n`);
+  }
 
   // Ensure ~/.kiro exists
   if (!existsSync(HOME_KIRO)) {
@@ -70,12 +108,17 @@ async function push() {
 
     console.log(`📁 Syncing ${dir}/`);
     await $`rsync -av --delete ${src}/ ${dest}/`.quiet();
+
+    // Replace placeholders in synced files
+    const processed = processDirectory(dest, env);
+    if (processed > 0) {
+      console.log(`   ✨ Replaced variables in ${processed} file(s)`);
+    }
   }
 
   // Sync MCP settings with env replacement
   const mcpSrc = join(PAI_KIRO, "settings", "mcp.json");
   const mcpDest = join(HOME_KIRO, "settings", "mcp.json");
-  const envPath = join(PAI_KIRO, "settings", ".env");
 
   if (existsSync(mcpSrc)) {
     // Ensure settings directory exists
@@ -84,18 +127,11 @@ async function push() {
       mkdirSync(settingsDir, { recursive: true });
     }
 
-    const env = loadEnv(envPath);
     const mcpContent = readFileSync(mcpSrc, "utf-8");
     const resolvedContent = replacePlaceholders(mcpContent, env);
 
     writeFileSync(mcpDest, resolvedContent);
     console.log(`📄 MCP settings synced (with env substitution)`);
-
-    // Warn if .env is missing
-    if (!existsSync(envPath)) {
-      console.log(`\n⚠️  Warning: ${envPath} not found`);
-      console.log(`   Copy .env.example to .env and fill in your values`);
-    }
   }
 
   console.log("\n✅ Push complete!");
@@ -103,6 +139,8 @@ async function push() {
 
 async function pull() {
   console.log("📥 Pulling ~/.kiro → pai-kiro\n");
+  console.log("⚠️  Note: Pull does NOT reverse variable substitution.");
+  console.log("   Pulled files will contain resolved values, not ${VAR} placeholders.\n");
 
   // Pull directories inside pai-kiro/
   for (const dir of SYNC_DIRS) {
@@ -137,8 +175,7 @@ async function status() {
 
     const result = await $`diff -rq ${src} ${dest} 2>/dev/null || true`.text();
     if (result.trim()) {
-      console.log(`📁 ${dir}/ - has differences:`);
-      console.log(result.trim().split("\n").map(l => `   ${l}`).join("\n"));
+      console.log(`📁 ${dir}/ - has differences (expected due to variable substitution)`);
     } else {
       console.log(`✅ ${dir}/ - in sync`);
     }
@@ -171,7 +208,7 @@ switch (command) {
 Usage: bun run scripts/sync.ts <command>
 
 Commands:
-  push    Push pai-kiro → ~/.kiro
+  push    Push pai-kiro → ~/.kiro (with variable substitution)
   pull    Pull ~/.kiro → pai-kiro
   status  Show sync status
 `);
