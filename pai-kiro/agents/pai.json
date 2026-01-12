@@ -2,12 +2,12 @@
   "name": "pai",
   "description": "PaiLang - Yang's Personal AI Assistant",
   "model": "claude-sonnet-4",
-  "prompt": "file://steering/identity.md",
+  "prompt": "file://../steering/identity.md",
   "tools": ["*"],
   "allowedTools": ["read", "write", "shell", "glob", "grep", "@anytype/*", "@github/*"],
   "resources": [
-    "file://steering/**/*.md",
-    "file://skills/**/*.md"
+    "file://../steering/**/*.md",
+    "file://../skills/**/*.md"
   ],
   "includeMcpJson": true,
   "hooks": {
