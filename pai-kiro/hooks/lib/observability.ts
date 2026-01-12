@@ -1,4 +1,4 @@
-// ~/.claude/hooks/lib/observability.ts
+// ~/.kiro/hooks/lib/observability.ts
 // Sends hook events to observability dashboards
 
 export interface ObservabilityEvent {

@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// ~/.claude/hooks/initialize-session.ts
+// ~/.kiro/hooks/initialize-session.ts
 // SessionStart hook: Initialize session state and environment
 
 import { existsSync, writeFileSync, mkdirSync } from 'fs';
@@ -33,7 +33,6 @@ function getLocalTimestamp(): string {
 }
 
 function setTabTitle(title: string): void {
-  // OSC escape sequence for terminal tab title
   const tabEscape = `\x1b]1;${title}\x07`;
   const windowEscape = `\x1b]2;${title}\x07`;
 
@@ -44,41 +43,16 @@ function setTabTitle(title: string): void {
 function getProjectName(cwd: string | undefined): string {
   if (!cwd) return 'Session';
 
-  // Extract project name from path
   const parts = cwd.split('/').filter(p => p);
-
-  // Look for common project indicators
   const projectIndicators = ['Projects', 'projects', 'src', 'repos', 'code'];
+
   for (let i = parts.length - 1; i >= 0; i--) {
     if (projectIndicators.includes(parts[i]) && parts[i + 1]) {
       return parts[i + 1];
     }
   }
 
-  // Default to last directory component
   return parts[parts.length - 1] || 'Session';
-}
-
-async function checkForUpdates(): Promise<void> {
-  // Optional: Check for Kiro CLI updates in background
-  // This is non-blocking and fails silently
-  try {
-    const proc = Bun.spawn(['claude', '--version'], {
-      stdout: 'pipe',
-      stderr: 'pipe'
-    });
-
-    const output = await new Response(proc.stdout).text();
-    const version = output.trim().match(/[\d.]+/)?.[0];
-
-    if (version) {
-      // Could compare against known latest version
-      // For now, just log it
-      console.error(`[PaiLang] Kiro CLI version: ${version}`);
-    }
-  } catch {
-    // Silently ignore - version check is optional
-  }
 }
 
 async function main() {
@@ -89,7 +63,7 @@ async function main() {
     }
 
     const payload: SessionStartPayload = JSON.parse(stdinData);
-    const paiDir = process.env.PAI_DIR || join(homedir(), '.claude');
+    const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
 
     // 1. Set initial tab title
     const projectName = getProjectName(payload.cwd);
@@ -97,10 +71,12 @@ async function main() {
 
     // 2. Ensure required directories exist
     const requiredDirs = [
-      join(paiDir, 'hooks', 'lib'),
-      join(paiDir, 'history', 'sessions'),
-      join(paiDir, 'history', 'learnings'),
-      join(paiDir, 'history', 'research'),
+      join(kiroDir, 'hooks', 'lib'),
+      join(kiroDir, 'memory', 'history', 'sessions'),
+      join(kiroDir, 'memory', 'history', 'learnings'),
+      join(kiroDir, 'memory', 'history', 'decisions'),
+      join(kiroDir, 'memory', 'state'),
+      join(kiroDir, 'memory', 'signals'),
     ];
 
     for (const dir of requiredDirs) {
@@ -109,8 +85,8 @@ async function main() {
       }
     }
 
-    // 3. Create session marker file (optional - for tracking)
-    const sessionFile = join(paiDir, '.current-session');
+    // 3. Create session marker file
+    const sessionFile = join(kiroDir, 'memory', 'state', '.current-session');
     writeFileSync(sessionFile, JSON.stringify({
       session_id: payload.session_id,
       started: getLocalTimestamp(),
@@ -128,15 +104,11 @@ async function main() {
       project: projectName
     });
 
-    // 5. Background version check (non-blocking)
-    checkForUpdates().catch(() => {});
-
     // Output session info
-    console.error(`[PaiLang] Session initialized: ${projectName}`);
-    console.error(`[PaiLang] Time: ${getLocalTimestamp()}`);
+    console.error(`[PAI] Session initialized: ${projectName}`);
+    console.error(`[PAI] Time: ${getLocalTimestamp()}`);
 
   } catch (error) {
-    // Never crash - just log
     console.error('Session initialization error:', error);
   }
 

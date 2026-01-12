@@ -84,6 +84,44 @@ Customize this format in SKILL.md to match your preferences.
 
 ---
 
+## Memory System (CRITICAL)
+
+你有一個持久的記憶系統在 `~/.kiro/memory/`。**主動使用它。**
+
+### 每次 Session 開始時
+1. 檢查 `memory/state/active-work.json` 了解上次進行中的工作
+2. 如果用戶提到相關主題，查閱 `memory/history/` 的歷史記錄
+
+### 工作中
+1. **做出重要決策時** → 記錄到 `memory/history/decisions/`
+2. **解決難題時** → 記錄到 `memory/history/learnings/`
+3. **開始大型任務時** → 更新 `memory/state/active-work.json`
+
+### 記錄格式
+
+**Decision:**
+```markdown
+# Decision: [標題]
+Date: YYYY-MM-DD
+Context: [背景]
+Decision: [決定]
+Rationale: [理由]
+```
+
+**Learning:**
+```markdown
+# Learning: [標題]
+Date: YYYY-MM-DD
+Phase: [OBSERVE|THINK|PLAN|BUILD|EXECUTE|VERIFY]
+Insight: [洞見]
+Application: [如何應用]
+```
+
+### 自動行為
+- Session 結束時，stop-hook 會自動記錄摘要到 `memory/history/sessions/`
+
+---
+
 ## Quick Reference
 
 **Full documentation available in context files:**
@@ -92,3 +130,4 @@ Customize this format in SKILL.md to match your preferences.
 - Contacts: `Contacts.md`
 - Stack preferences: `CoreStack.md`
 - Security protocols: `SecurityProtocols.md`
+- **Memory System: `steering/memory.md`**

@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-// ~/.claude/hooks/load-core-context.ts
-// SessionStart hook: Inject skill/context files into AI context
+// ~/.kiro/hooks/load-core-context.ts
+// SessionStart hook: Inject skill/context files and memory state into AI context
 
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
@@ -12,9 +12,7 @@ interface SessionStartPayload {
 }
 
 function isSubagentSession(): boolean {
-  // Check for subagent indicators
-  // Subagents shouldn't load full context (they get it from parent)
-  return process.env.CLAUDE_CODE_AGENT !== undefined ||
+  return process.env.KIRO_AGENT !== undefined ||
          process.env.SUBAGENT === 'true';
 }
 
@@ -37,9 +35,87 @@ function getLocalTimestamp(): string {
   }
 }
 
+function loadMemoryState(kiroDir: string): string {
+  const activeWorkPath = join(kiroDir, 'memory', 'state', 'active-work.json');
+
+  if (!existsSync(activeWorkPath)) {
+    return '';
+  }
+
+  try {
+    const content = readFileSync(activeWorkPath, 'utf-8');
+    const state = JSON.parse(content);
+
+    if (!state.current_task) {
+      return '';
+    }
+
+    return `
+## 📌 Active Work (from memory)
+- **Task:** ${state.current_task}
+- **Project:** ${state.project || 'N/A'}
+- **Started:** ${state.started_at || 'N/A'}
+- **Context:** ${state.context?.join(', ') || 'N/A'}
+
+Consider: Is this session related to the above work? If so, continue from where you left off.
+`;
+  } catch {
+    return '';
+  }
+}
+
+function getRecentSessions(kiroDir: string, limit: number = 3): string {
+  const sessionsDir = join(kiroDir, 'memory', 'history', 'sessions');
+
+  if (!existsSync(sessionsDir)) {
+    return '';
+  }
+
+  try {
+    const { readdirSync, statSync } = require('fs');
+
+    // Get all year-month directories
+    const yearMonths = readdirSync(sessionsDir)
+      .filter((d: string) => /^\d{4}-\d{2}$/.test(d))
+      .sort()
+      .reverse();
+
+    if (yearMonths.length === 0) {
+      return '';
+    }
+
+    // Get recent session files
+    const sessions: { file: string; mtime: number }[] = [];
+    for (const ym of yearMonths.slice(0, 2)) {
+      const ymDir = join(sessionsDir, ym);
+      const files = readdirSync(ymDir).filter((f: string) => f.endsWith('.md'));
+      for (const file of files) {
+        const filepath = join(ymDir, file);
+        const stat = statSync(filepath);
+        sessions.push({ file: `${ym}/${file}`, mtime: stat.mtimeMs });
+      }
+    }
+
+    sessions.sort((a, b) => b.mtime - a.mtime);
+    const recent = sessions.slice(0, limit);
+
+    if (recent.length === 0) {
+      return '';
+    }
+
+    return `
+## 📜 Recent Sessions
+${recent.map(s => `- \`memory/history/sessions/${s.file}\``).join('\n')}
+
+Use \`cat ~/.kiro/memory/history/sessions/[file]\` to review if relevant.
+`;
+  } catch {
+    return '';
+  }
+}
+
 async function main() {
   try {
-    // Skip for subagents - they get context from parent
     if (isSubagentSession()) {
       process.exit(0);
     }
@@ -50,42 +126,36 @@ async function main() {
     }
 
     const payload: SessionStartPayload = JSON.parse(stdinData);
-    const paiDir = process.env.PAI_DIR || join(homedir(), '.claude');
+    const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
 
-    // Look for CORE skill to load
-    // The CORE skill contains identity, response format, and operating principles
-    const coreSkillPath = join(paiDir, 'skills', 'CORE', 'SKILL.md');
+    const coreSkillPath = join(kiroDir, 'skills', 'CORE', 'SKILL.md');
 
     if (!existsSync(coreSkillPath)) {
-      // No CORE skill installed - that's fine
       console.error('[PaiLang] No CORE skill found - skipping context injection');
       process.exit(0);
     }
 
-    // Read the skill content
     const skillContent = readFileSync(coreSkillPath, 'utf-8');
+    const memoryState = loadMemoryState(kiroDir);
+    const recentSessions = getRecentSessions(kiroDir);
 
-    // Output as system-reminder for AI to process
-    // This format is recognized by Kiro CLI
     const output = `<system-reminder>
-PaiLang CORE CONTEXT (Auto-loaded at Session Start)
+CORE CONTEXT (Auto-loaded at Session Start)
 
 📅 CURRENT DATE/TIME: ${getLocalTimestamp()}
 
 The following context has been loaded from ${coreSkillPath}:
 
 ${skillContent}
-
+${memoryState}${recentSessions}
 This context is now active for this session. Follow all instructions, preferences, and guidelines contained above.
 </system-reminder>
 
-✅ PaiLang Context successfully loaded...`;
+✅ Context successfully loaded...`;
 
-    // Output goes to stdout - Kiro CLI will see it
     console.log(output);
 
   } catch (error) {
-    // Never crash - just skip
     console.error('Context loading error:', error);
   }
 
