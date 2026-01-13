@@ -70,16 +70,6 @@
       },
       {
         "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/subagent-stop-hook.ts"],
-        "timeout_ms": 10000
-      },
-      {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-session-summary.ts"],
-        "timeout_ms": 10000
-      },
-      {
-        "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "Stop"],
         "timeout_ms": 5000
       }
