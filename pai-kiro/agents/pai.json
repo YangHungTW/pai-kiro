@@ -13,7 +13,7 @@
   ],
   "includeMcpJson": true,
   "hooks": {
-    "AgentSpawn": [
+    "agentSpawn": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/initialize-session.ts"],
@@ -30,7 +30,7 @@
         "timeout_ms": 5000
       }
     ],
-    "UserPromptSubmit": [
+    "userPromptSubmit": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/update-tab-titles.ts"],
@@ -42,7 +42,7 @@
         "timeout_ms": 5000
       }
     ],
-    "PreToolUse": [
+    "preToolUse": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/security-validator.ts"],
@@ -55,14 +55,14 @@
         "timeout_ms": 5000
       }
     ],
-    "PostToolUse": [
+    "postToolUse": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "PostToolUse"],
         "timeout_ms": 5000
       }
     ],
-    "Stop": [
+    "stop": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/stop-hook.ts"],
