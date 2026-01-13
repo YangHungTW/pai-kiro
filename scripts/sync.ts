@@ -3,21 +3,27 @@
  * Sync script for pai-kiro ↔ ~/.kiro
  *
  * Usage:
- *   bun run scripts/sync.ts push    # Push pai-kiro → ~/.kiro
- *   bun run scripts/sync.ts pull    # Pull ~/.kiro → pai-kiro
- *   bun run scripts/sync.ts status  # Show diff status
+ *   bun run scripts/sync.ts push    # Sync settings (copy) + ensure symlinks
+ *   bun run scripts/sync.ts setup   # Full setup including memory/observability
+ *   bun run scripts/sync.ts status  # Show current status
  */
 
 import { $ } from "bun";
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, lstatSync } from "fs";
 import { join, extname } from "path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const PAI_KIRO = join(PROJECT_ROOT, "pai-kiro");
 const HOME_KIRO = join(process.env.HOME!, ".kiro");
 
-// Directories to sync (inside pai-kiro/ → ~/.kiro)
-const SYNC_DIRS = ["steering", "agents", "hooks", "skills", "memory", "observability"];
+// Directories to symlink (config/code - changes apply immediately)
+const LINK_DIRS = ["steering", "agents", "hooks", "skills"];
+
+// Directory to copy with env substitution
+const COPY_DIR = "settings";
+
+// Directories to initialize only during setup (runtime data)
+const SETUP_DIRS = ["memory", "observability"];
 
 // File extensions that support variable substitution
 const TEXT_EXTENSIONS = [".md", ".json", ".ts", ".yaml", ".yml", ".txt"];
@@ -79,8 +85,17 @@ function processDirectory(dir: string, env: Record<string, string>): number {
   return count;
 }
 
+// Check if path is a symlink
+function isSymlink(path: string): boolean {
+  try {
+    return lstatSync(path).isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
 async function push() {
-  console.log("📤 Pushing pai-kiro → ~/.kiro\n");
+  console.log("📤 Syncing pai-kiro → ~/.kiro\n");
 
   const envPath = join(PAI_KIRO, "settings", ".env");
   const env = loadEnv(envPath);
@@ -96,8 +111,8 @@ async function push() {
     mkdirSync(HOME_KIRO, { recursive: true });
   }
 
-  // Sync directories inside pai-kiro/
-  for (const dir of SYNC_DIRS) {
+  // Ensure symlinks for config directories
+  for (const dir of LINK_DIRS) {
     const src = join(PAI_KIRO, dir);
     const dest = join(HOME_KIRO, dir);
 
@@ -106,87 +121,151 @@ async function push() {
       continue;
     }
 
-    console.log(`📁 Syncing ${dir}/`);
-    await $`rsync -av --delete ${src}/ ${dest}/`.quiet();
+    if (isSymlink(dest)) {
+      console.log(`🔗 ${dir}/ - symlinked`);
+    } else if (existsSync(dest)) {
+      console.log(`⚠️  ${dir}/ exists as directory. Run 'bun run scripts/sync.ts setup' to convert.`);
+    } else {
+      console.log(`🔗 Creating symlink: ${dir}/`);
+      await $`ln -s ${src} ${dest}`.quiet();
+    }
+  }
 
-    // Replace placeholders in synced files
-    const processed = processDirectory(dest, env);
+  // Copy settings with env substitution
+  const settingsSrc = join(PAI_KIRO, COPY_DIR);
+  const settingsDest = join(HOME_KIRO, COPY_DIR);
+
+  if (existsSync(settingsSrc)) {
+    if (!existsSync(settingsDest)) {
+      mkdirSync(settingsDest, { recursive: true });
+    }
+
+    console.log(`📁 Copying ${COPY_DIR}/ (with env substitution)`);
+    await $`rsync -av --delete ${settingsSrc}/ ${settingsDest}/`.quiet();
+
+    // Replace placeholders
+    const processed = processDirectory(settingsDest, env);
     if (processed > 0) {
       console.log(`   ✨ Replaced variables in ${processed} file(s)`);
     }
   }
 
-  // Sync MCP settings with env replacement
-  const mcpSrc = join(PAI_KIRO, "settings", "mcp.json");
-  const mcpDest = join(HOME_KIRO, "settings", "mcp.json");
-
-  if (existsSync(mcpSrc)) {
-    // Ensure settings directory exists
-    const settingsDir = join(HOME_KIRO, "settings");
-    if (!existsSync(settingsDir)) {
-      mkdirSync(settingsDir, { recursive: true });
-    }
-
-    const mcpContent = readFileSync(mcpSrc, "utf-8");
-    const resolvedContent = replacePlaceholders(mcpContent, env);
-
-    writeFileSync(mcpDest, resolvedContent);
-    console.log(`📄 MCP settings synced (with env substitution)`);
-  }
-
   console.log("\n✅ Push complete!");
 }
 
-async function pull() {
-  console.log("📥 Pulling ~/.kiro → pai-kiro\n");
-  console.log("⚠️  Note: Pull does NOT reverse variable substitution.");
-  console.log("   Pulled files will contain resolved values, not ${VAR} placeholders.\n");
+async function setup() {
+  console.log("🔧 Setting up ~/.kiro\n");
 
-  // Pull directories inside pai-kiro/
-  for (const dir of SYNC_DIRS) {
-    const src = join(HOME_KIRO, dir);
-    const dest = join(PAI_KIRO, dir);
+  const envPath = join(PAI_KIRO, "settings", ".env");
+  const env = loadEnv(envPath);
 
-    if (!existsSync(src)) {
-      console.log(`⚠️  Skipping ${dir} (not found in ~/.kiro)`);
-      continue;
-    }
-
-    console.log(`📁 Syncing ${dir}/`);
-    await $`rsync -av --delete ${src}/ ${dest}/`.quiet();
+  if (!existsSync(envPath)) {
+    console.log(`⚠️  Warning: ${envPath} not found`);
+    console.log(`   Copy .env.example to .env and fill in your values\n`);
   }
 
-  console.log("\n⚠️  Note: MCP settings not pulled (contains secrets)");
-  console.log("✅ Pull complete!");
-}
+  // Ensure ~/.kiro exists
+  if (!existsSync(HOME_KIRO)) {
+    mkdirSync(HOME_KIRO, { recursive: true });
+  }
 
-async function status() {
-  console.log("🔍 Checking sync status\n");
-
-  // Check directories inside pai-kiro/
-  for (const dir of SYNC_DIRS) {
+  // Create symlinks for config directories
+  for (const dir of LINK_DIRS) {
     const src = join(PAI_KIRO, dir);
     const dest = join(HOME_KIRO, dir);
 
-    if (!existsSync(src) || !existsSync(dest)) {
-      console.log(`⚠️  ${dir}/ - missing on one side`);
+    if (!existsSync(src)) {
+      console.log(`⚠️  Skipping ${dir} (not found in pai-kiro)`);
       continue;
     }
 
-    const result = await $`diff -rq ${src} ${dest} 2>/dev/null || true`.text();
-    if (result.trim()) {
-      console.log(`📁 ${dir}/ - has differences (expected due to variable substitution)`);
+    if (isSymlink(dest)) {
+      console.log(`🔗 ${dir}/ - already symlinked`);
     } else {
-      console.log(`✅ ${dir}/ - in sync`);
+      if (existsSync(dest)) {
+        console.log(`🗑️  Removing existing ${dir}/`);
+        await $`rm -rf ${dest}`.quiet();
+      }
+      console.log(`🔗 Creating symlink: ${dir}/`);
+      await $`ln -s ${src} ${dest}`.quiet();
     }
   }
 
-  // Check MCP settings
-  const mcpDest = join(HOME_KIRO, "settings", "mcp.json");
-  if (existsSync(mcpDest)) {
-    console.log(`✅ settings/mcp.json - exists in ~/.kiro`);
+  // Copy settings with env substitution
+  const settingsSrc = join(PAI_KIRO, COPY_DIR);
+  const settingsDest = join(HOME_KIRO, COPY_DIR);
+
+  if (existsSync(settingsSrc)) {
+    if (!existsSync(settingsDest)) {
+      mkdirSync(settingsDest, { recursive: true });
+    }
+
+    console.log(`📁 Copying ${COPY_DIR}/ (with env substitution)`);
+    await $`rsync -av --delete ${settingsSrc}/ ${settingsDest}/`.quiet();
+
+    const processed = processDirectory(settingsDest, env);
+    if (processed > 0) {
+      console.log(`   ✨ Replaced variables in ${processed} file(s)`);
+    }
+  }
+
+  // Initialize runtime directories (copy once, don't overwrite)
+  for (const dir of SETUP_DIRS) {
+    const src = join(PAI_KIRO, dir);
+    const dest = join(HOME_KIRO, dir);
+
+    if (!existsSync(src)) {
+      console.log(`⚠️  Skipping ${dir} (not found in pai-kiro)`);
+      continue;
+    }
+
+    if (existsSync(dest)) {
+      console.log(`📂 ${dir}/ - already exists (preserved)`);
+    } else {
+      console.log(`📂 Initializing ${dir}/`);
+      await $`cp -r ${src} ${dest}`.quiet();
+    }
+  }
+
+  console.log("\n✅ Setup complete!");
+}
+
+async function status() {
+  console.log("🔍 Checking ~/.kiro status\n");
+
+  // Check symlink directories
+  console.log("Symlinked directories:");
+  for (const dir of LINK_DIRS) {
+    const dest = join(HOME_KIRO, dir);
+
+    if (!existsSync(dest)) {
+      console.log(`  ❌ ${dir}/ - missing`);
+    } else if (isSymlink(dest)) {
+      console.log(`  ✅ ${dir}/ - symlinked`);
+    } else {
+      console.log(`  ⚠️  ${dir}/ - is directory (should be symlink)`);
+    }
+  }
+
+  // Check settings
+  console.log("\nCopied directories:");
+  const settingsDest = join(HOME_KIRO, COPY_DIR);
+  if (existsSync(settingsDest)) {
+    console.log(`  ✅ ${COPY_DIR}/ - exists`);
   } else {
-    console.log(`⚠️  settings/mcp.json - not found in ~/.kiro`);
+    console.log(`  ❌ ${COPY_DIR}/ - missing`);
+  }
+
+  // Check runtime directories
+  console.log("\nRuntime directories:");
+  for (const dir of SETUP_DIRS) {
+    const dest = join(HOME_KIRO, dir);
+
+    if (existsSync(dest)) {
+      console.log(`  ✅ ${dir}/ - exists`);
+    } else {
+      console.log(`  ❌ ${dir}/ - missing (run setup)`);
+    }
   }
 }
 
@@ -197,8 +276,8 @@ switch (command) {
   case "push":
     await push();
     break;
-  case "pull":
-    await pull();
+  case "setup":
+    await setup();
     break;
   case "status":
     await status();
@@ -208,8 +287,8 @@ switch (command) {
 Usage: bun run scripts/sync.ts <command>
 
 Commands:
-  push    Push pai-kiro → ~/.kiro (with variable substitution)
-  pull    Pull ~/.kiro → pai-kiro
-  status  Show sync status
+  push    Sync settings (copy with env substitution) + ensure symlinks
+  setup   Full setup: create symlinks + copy settings + init runtime dirs
+  status  Show current ~/.kiro status
 `);
 }
