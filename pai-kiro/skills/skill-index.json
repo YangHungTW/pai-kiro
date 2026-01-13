@@ -1,8 +1,8 @@
 {
-  "generated": "2026-01-08T13:54:42.792Z",
-  "totalSkills": 5,
+  "generated": "2026-01-13T03:30:00.000Z",
+  "totalSkills": 6,
   "alwaysLoadedCount": 1,
-  "deferredCount": 4,
+  "deferredCount": 5,
   "skills": {
     "core": {
       "name": "CORE",
@@ -96,6 +96,29 @@
         "phase"
       ],
       "workflows": [],
+      "tier": "deferred"
+    },
+    "notes": {
+      "name": "Notes",
+      "path": "Notes/SKILL.md",
+      "fullDescription": "Anytype note-taking system. USE WHEN user wants to take notes, record ideas, save information, or organize knowledge. Creates objects in Anytype with appropriate types and tags.",
+      "triggers": [
+        "note",
+        "notes",
+        "record",
+        "save",
+        "remember",
+        "jot",
+        "write down",
+        "anytype",
+        "knowledge",
+        "bookmark"
+      ],
+      "workflows": [
+        "CreateNote",
+        "SearchNotes",
+        "LinkObjects"
+      ],
       "tier": "deferred"
     }
   }
