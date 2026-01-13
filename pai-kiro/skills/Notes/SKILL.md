@@ -7,11 +7,29 @@ description: Anytype note-taking system. USE WHEN user wants to take notes, reco
 
 Manage notes and knowledge using Anytype MCP. Automatically selects the right object type, adds relevant tags, and links related content.
 
-## Anytype Configuration
+## MCP Tools Used
 
-**Space:** AI Notes
+| Tool | Purpose |
+|------|---------|
+| `mcp__anytype__API-list-spaces` | Get available spaces |
+| `mcp__anytype__API-list-types` | Get object types in a space |
+| `mcp__anytype__API-list-properties` | Get properties (including tag property) |
+| `mcp__anytype__API-list-tags` | Get existing tags |
+| `mcp__anytype__API-create-tag` | Create new tag |
+| `mcp__anytype__API-create-object` | Create note/page/task/etc |
+| `mcp__anytype__API-update-object` | Update object (add links, tags) |
+| `mcp__anytype__API-search-space` | Search objects in a space |
 
-**Space ID:** `bafyreid74whx6w7wtobtzexo3xp3qn4o2ydl5cdfwmnnehs75yvkmn4jjy.q0x6wvfnyzem`
+## Space Configuration
+
+**Default Space:** AI Notes
+
+Get space ID dynamically:
+```
+spaces = mcp__anytype__API-list-spaces()
+space = spaces.data.find(s => s.name === "AI Notes")
+SPACE_ID = space.id
+```
 
 ## Object Types
 
@@ -29,16 +47,32 @@ Tags are **dynamically managed** - all IDs are resolved at runtime.
 
 ### Tag Resolution Process
 
-1. **Get tag property ID** via `API-list-properties`, find `key: "tag"`
-2. **Extract keywords** from note content
-3. **List existing tags** via `API-list-tags` with the property ID
-4. **Match or create**:
+1. **Get tag property ID**:
+```
+properties = mcp__anytype__API-list-properties({ space_id: SPACE_ID })
+tagProperty = properties.data.find(p => p.key === "tag")
+TAG_PROPERTY_ID = tagProperty.id
+```
+
+2. **List existing tags**:
+```
+existingTags = mcp__anytype__API-list-tags({
+  space_id: SPACE_ID,
+  property_id: TAG_PROPERTY_ID
+})
+```
+
+3. **Match or create**:
    - If tag exists → use its ID
-   - If not exists → `API-create-tag` with appropriate color
-5. **Apply tags** to object via `properties: [{ key: "tag", multi_select: [tag_ids] }]`
+   - If not exists → create with `mcp__anytype__API-create-tag`
+
+4. **Apply tags** to object:
+```
+properties: [{ key: "tag", multi_select: [tag_id_1, tag_id_2] }]
+```
 
 ### Tag Colors
-Available colors for new tags: `grey`, `yellow`, `orange`, `red`, `pink`, `purple`, `blue`, `ice`, `teal`, `lime`
+Available: `grey`, `yellow`, `orange`, `red`, `pink`, `purple`, `blue`, `ice`, `teal`, `lime`
 
 ## Workflow Routing
 
@@ -56,26 +90,16 @@ Available colors for new tags: `grey`, `yellow`, `orange`, `red`, `pink`, `purpl
 4. **Task** - Has actionable items, deadlines, or todos
 5. **Bookmark** - Primary content is a URL
 
-## Tag Selection Logic
-
-Automatically tag based on content keywords:
-- Mentions "PAI", "assistant", "AI" → `pai`
-- Mentions "automate", "script", "hook" → `zi_dong_hua`
-- Mentions "infra", "server", "deploy" → `ji_chu_jia_gou`
-- Mentions "monitor", "alert", "log" → `jian_kong`
-- Mentions "skill", "capability" → `ji_neng`
-
 ## Linking Objects
 
 Use the `links` property to connect related objects:
 
-```typescript
-// Link object A to object B
+```
 mcp__anytype__API-update-object({
-  space_id: "...",
-  object_id: "object_a_id",
+  space_id: SPACE_ID,
+  object_id: "source_object_id",
   properties: [
-    { key: "links", objects: ["object_b_id"] }
+    { key: "links", objects: ["target_object_id"] }
   ]
 })
 ```
@@ -85,31 +109,48 @@ mcp__anytype__API-update-object({
 **Example 1: Quick note**
 ```
 User: "Note: The MCP server needs ANYTYPE_MCP_HEADERS env var"
-→ Create Note type
-→ Auto-tag: pai, ji_chu_jia_gou
-→ Save to Anytype
+
+1. Get space ID from API-list-spaces
+2. Get tag property ID from API-list-properties
+3. Search existing tags, create "PAI" and "Infrastructure" if needed
+4. Create object:
+   mcp__anytype__API-create-object({
+     space_id: SPACE_ID,
+     type_key: "note",
+     name: "MCP server env var requirement",
+     body: "The MCP server needs ANYTYPE_MCP_HEADERS env var",
+     properties: [{ key: "tag", multi_select: [pai_tag_id, infra_tag_id] }]
+   })
 ```
 
-**Example 2: Structured documentation**
+**Example 2: Save a bookmark**
 ```
-User: "Save this as documentation: [long content with headers]"
-→ Create Page type
-→ Parse content structure
-→ Add appropriate tags
+User: "Bookmark this: https://docs.anthropic.com/..."
+
+mcp__anytype__API-create-object({
+  space_id: SPACE_ID,
+  type_key: "bookmark",
+  name: "Anthropic Documentation",
+  properties: [
+    { key: "source", url: "https://docs.anthropic.com/..." }
+  ]
+})
 ```
 
 **Example 3: Link related notes**
 ```
 User: "Link this note to the PAI architecture page"
-→ Search for "PAI architecture"
-→ Update links property
-→ Confirm linkage
-```
 
-**Example 4: Save a bookmark**
-```
-User: "Bookmark this: https://docs.anthropic.com/..."
-→ Create Bookmark type
-→ Set source URL
-→ Add description from context
+1. Search for "PAI architecture":
+   results = mcp__anytype__API-search-space({
+     space_id: SPACE_ID,
+     query: "PAI architecture"
+   })
+
+2. Update links:
+   mcp__anytype__API-update-object({
+     space_id: SPACE_ID,
+     object_id: current_note_id,
+     properties: [{ key: "links", objects: [results.data[0].id] }]
+   })
 ```

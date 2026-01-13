@@ -11,69 +11,66 @@ Create a new note in Anytype with appropriate type and tags.
 
 ## Process
 
-### Step 1: Determine Object Type
+### Step 1: Get Space ID
+
+```
+spaces = mcp__anytype__API-list-spaces()
+space = spaces.data.find(s => s.name === "AI Notes")
+SPACE_ID = space.id
+```
+
+### Step 2: Determine Object Type
 
 ```
 IF type_hint provided:
-  use type_hint
+  TYPE_KEY = type_hint
 ELSE IF content has URL as primary:
-  type = "bookmark"
+  TYPE_KEY = "bookmark"
 ELSE IF content has headers/sections:
-  type = "page"
+  TYPE_KEY = "page"
 ELSE IF content mentions project/planning:
-  type = "project"
+  TYPE_KEY = "project"
 ELSE IF content has action items/deadlines:
-  type = "task"
+  TYPE_KEY = "task"
 ELSE:
-  type = "note"
+  TYPE_KEY = "note"
 ```
 
-### Step 2: Extract and Resolve Tags
+### Step 3: Resolve Tags
 
-1. **Get tag property ID** dynamically:
-
-```typescript
-const properties = await mcp__anytype__API-list-properties({
-  space_id: SPACE_ID
-});
-const tagProperty = properties.data.find(p => p.key === "tag");
-const tagPropertyId = tagProperty.id;
+1. **Get tag property ID**:
+```
+properties = mcp__anytype__API-list-properties({ space_id: SPACE_ID })
+tagProperty = properties.data.find(p => p.key === "tag")
+TAG_PROPERTY_ID = tagProperty.id
 ```
 
 2. **Extract keywords** from content that could be tags
 
-3. **List existing tags** from Anytype:
-
-```typescript
-const existingTags = await mcp__anytype__API-list-tags({
+3. **List existing tags**:
+```
+existingTags = mcp__anytype__API-list-tags({
   space_id: SPACE_ID,
-  property_id: tagPropertyId
-});
+  property_id: TAG_PROPERTY_ID
+})
 ```
 
 4. **Match or create tags**:
+```
+tagIds = []
+for keyword in extractedKeywords:
+  existing = existingTags.data.find(t => t.name.toLowerCase() === keyword.toLowerCase())
 
-```typescript
-const tagIds = [];
-for (const keyword of extractedKeywords) {
-  // Search for existing tag (case-insensitive match)
-  const existing = existingTags.data.find(
-    t => t.name.toLowerCase() === keyword.toLowerCase()
-  );
-
-  if (existing) {
-    tagIds.push(existing.id);
-  } else {
-    // Create new tag
-    const newTag = await mcp__anytype__API-create-tag({
+  if existing:
+    tagIds.push(existing.id)
+  else:
+    newTag = mcp__anytype__API-create-tag({
       space_id: SPACE_ID,
-      property_id: tagPropertyId,
+      property_id: TAG_PROPERTY_ID,
       name: keyword,
-      color: selectColorForTag(keyword)
-    });
-    tagIds.push(newTag.id);
-  }
-}
+      color: selectColor(keyword)
+    })
+    tagIds.push(newTag.id)
 ```
 
 ### Tag Color Selection
@@ -87,37 +84,36 @@ for (const keyword of extractedKeywords) {
 | Personal | `lime` |
 | Default | `grey` |
 
-### Step 3: Create Object
+### Step 4: Create Object
 
-```typescript
-const result = await mcp__anytype__API-create-object({
-  space_id: "bafyreid74whx6w7wtobtzexo3xp3qn4o2ydl5cdfwmnnehs75yvkmn4jjy.q0x6wvfnyzem",
-  type_key: determined_type,
-  name: extract_title(content),
+```
+result = mcp__anytype__API-create-object({
+  space_id: SPACE_ID,
+  type_key: TYPE_KEY,
+  name: extractTitle(content),
   body: content,
   properties: [
-    { key: "tag", multi_select: tag_ids }
+    { key: "tag", multi_select: tagIds }
   ]
-});
+})
 ```
 
-### Step 4: Link Objects (if specified)
+### Step 5: Link Objects (if specified)
 
-```typescript
-if (link_to && link_to.length > 0) {
-  await mcp__anytype__API-update-object({
-    space_id: "...",
+```
+if link_to and link_to.length > 0:
+  mcp__anytype__API-update-object({
+    space_id: SPACE_ID,
     object_id: result.id,
     properties: [
       { key: "links", objects: link_to }
     ]
-  });
-}
+  })
 ```
 
 ## Output
 
-- Object ID
-- Object type used
-- Tags applied
-- Links created
+- Object ID: `result.id`
+- Object type used: `TYPE_KEY`
+- Tags applied: `tagIds`
+- Links created: `link_to`
