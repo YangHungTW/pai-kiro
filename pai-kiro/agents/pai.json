@@ -13,7 +13,7 @@
   ],
   "includeMcpJson": true,
   "hooks": {
-    "agentSpawn": [
+    "AgentSpawn": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/initialize-session.ts"],
@@ -30,7 +30,7 @@
         "timeout_ms": 5000
       }
     ],
-    "userPromptSubmit": [
+    "UserPromptSubmit": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/update-tab-titles.ts"],
@@ -42,7 +42,7 @@
         "timeout_ms": 5000
       }
     ],
-    "preToolUse": [
+    "PreToolUse": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/security-validator.ts"],
@@ -55,14 +55,14 @@
         "timeout_ms": 5000
       }
     ],
-    "postToolUse": [
+    "PostToolUse": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "PostToolUse"],
         "timeout_ms": 5000
       }
     ],
-    "stop": [
+    "Stop": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/stop-hook.ts"],
@@ -70,23 +70,9 @@
       },
       {
         "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "Stop"],
-        "timeout_ms": 5000
-      }
-    ],
-    "subagentStop": [
-      {
-        "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/subagent-stop-hook.ts"],
         "timeout_ms": 10000
       },
-      {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "SubagentStop"],
-        "timeout_ms": 5000
-      }
-    ],
-    "sessionEnd": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/capture-session-summary.ts"],
@@ -94,7 +80,7 @@
       },
       {
         "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "SessionEnd"],
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "Stop"],
         "timeout_ms": 5000
       }
     ]
