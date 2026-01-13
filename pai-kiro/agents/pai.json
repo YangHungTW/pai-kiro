@@ -1,7 +1,7 @@
 {
   "name": "pai",
   "description": "${PAI_ASSISTANT_NAME} - ${PAI_USER_NAME}'s Personal AI Assistant",
-  "model": "claude-sonnet-4",
+  "model": "claude-sonnet-4.5",
   "prompt": "file://../steering/identity.md",
   "tools": ["*"],
   "allowedTools": ["read", "write", "shell", "glob", "grep", "@anytype/*", "@github/*"],
