@@ -6,6 +6,7 @@ import { readFileSync, appendFileSync, mkdirSync, existsSync, writeFileSync } fr
 import { join } from 'path';
 import { homedir } from 'os';
 import { enrichEventWithAgentMetadata, isAgentSpawningCall } from './lib/metadata-extraction';
+import { sendEventToObservability, getCurrentTimestamp } from './lib/observability';
 
 interface HookEvent {
   source_app: string;
@@ -137,6 +138,17 @@ async function main() {
     const eventsFile = getEventsFilePath();
     const jsonLine = JSON.stringify(event) + '\n';
     appendFileSync(eventsFile, jsonLine, 'utf-8');
+
+    // Send to observability server (non-blocking, fails silently)
+    await sendEventToObservability({
+      source_app: event.source_app,
+      session_id: event.session_id,
+      hook_event_type: eventType as any,
+      timestamp: getCurrentTimestamp(),
+      tool_name: hookData.tool_name,
+      tool_input: hookData.tool_input,
+      agent_type: agentName
+    });
 
   } catch (error) {
     console.error('Event capture error:', error);

@@ -21,7 +21,7 @@ export interface ObservabilityEvent {
  * Fails silently if dashboard is not running - doesn't block hook execution
  */
 export async function sendEventToObservability(event: ObservabilityEvent): Promise<void> {
-  const dashboardUrl = process.env.PAI_OBSERVABILITY_URL || 'http://localhost:4000/events';
+  const dashboardUrl = process.env.KIRO_OBSERVABILITY_URL || process.env.PAI_OBSERVABILITY_URL || 'http://localhost:4000/events';
 
   try {
     const response = await fetch(dashboardUrl, {
