@@ -139,8 +139,8 @@ async function main() {
       process.exit(0);
     }
 
-    const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
-    const historyDir = join(kiroDir, 'memory', 'history');
+    const paiDir = process.env.PAI_DIR || join(homedir(), '.kiro');
+    const historyDir = join(paiDir, 'memory', 'history');
 
     const isLearning = hasLearningIndicators(response);
     const type = isLearning ? 'LEARNING' : 'SESSION';
