@@ -3,8 +3,15 @@
 // Captures ALL Kiro CLI hook events to JSONL
 
 import { readFileSync, appendFileSync, mkdirSync, existsSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
+import { fileURLToPath } from 'url';
+
+// Get script directory for reliable imports
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Import from absolute paths
 import { enrichEventWithAgentMetadata, isAgentSpawningCall } from './lib/metadata-extraction';
 import { sendEventToObservability, getCurrentTimestamp } from './lib/observability';
 
@@ -15,6 +22,24 @@ interface HookEvent {
   payload: Record<string, any>;
   timestamp: number;
   timestamp_local: string;
+}
+
+function getPaiDir(): string {
+  return process.env.PAI_DIR || join(homedir(), '.kiro');
+}
+
+function debugLog(message: string, data?: any): void {
+  const debugFile = join(getPaiDir(), 'hooks-debug.log');
+  const timestamp = new Date().toISOString();
+  const logLine = data
+    ? `[${timestamp}] ${message}: ${JSON.stringify(data)}\n`
+    : `[${timestamp}] ${message}\n`;
+
+  try {
+    appendFileSync(debugFile, logLine, 'utf-8');
+  } catch {
+    // Ignore debug logging errors
+  }
 }
 
 function getLocalTimestamp(): string {
@@ -36,7 +61,7 @@ function getLocalTimestamp(): string {
 }
 
 function getEventsFilePath(): string {
-  const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
+  const kiroDir = getPaiDir();
   const now = new Date();
   const tz = process.env.TIME_ZONE || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const localDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
@@ -55,8 +80,7 @@ function getEventsFilePath(): string {
 }
 
 function getSessionMappingFile(): string {
-  const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
-  return join(kiroDir, 'agent-sessions.json');
+  return join(getPaiDir(), 'agent-sessions.json');
 }
 
 function getAgentForSession(sessionId: string): string {
@@ -64,12 +88,12 @@ function getAgentForSession(sessionId: string): string {
     const mappingFile = getSessionMappingFile();
     if (existsSync(mappingFile)) {
       const mappings = JSON.parse(readFileSync(mappingFile, 'utf-8'));
-      return mappings[sessionId] || process.env.DA || 'main';
+      return mappings[sessionId] || process.env.DA || 'kiro';
     }
   } catch {
     // Ignore errors
   }
-  return process.env.DA || 'main';
+  return process.env.DA || 'kiro';
 }
 
 function setAgentForSession(sessionId: string, agentName: string): void {
@@ -89,20 +113,43 @@ function setAgentForSession(sessionId: string, agentName: string): void {
 }
 
 async function main() {
+  debugLog('capture-all-events.ts started', { args: process.argv });
+
   try {
     const args = process.argv.slice(2);
     const eventTypeIndex = args.indexOf('--event-type');
 
     if (eventTypeIndex === -1) {
+      debugLog('Missing --event-type argument');
       console.error('Missing --event-type argument');
       process.exit(0);
     }
 
     const eventType = args[eventTypeIndex + 1];
-    const stdinData = await Bun.stdin.text();
-    const hookData = JSON.parse(stdinData);
+    debugLog('Event type', eventType);
 
-    const sessionId = hookData.session_id || 'main';
+    // Read stdin - Kiro CLI sends JSON here
+    const stdinData = await Bun.stdin.text();
+    debugLog('Received stdin', stdinData.substring(0, 500));
+
+    if (!stdinData || stdinData.trim() === '') {
+      debugLog('Empty stdin received');
+      process.exit(0);
+    }
+
+    let hookData: Record<string, any>;
+    try {
+      hookData = JSON.parse(stdinData);
+    } catch (parseError) {
+      debugLog('JSON parse error', { error: String(parseError), data: stdinData });
+      process.exit(0);
+    }
+
+    debugLog('Parsed hook data', hookData);
+
+    // Kiro CLI format: hook_event_name, cwd, tool_name, tool_input, tool_response
+    // Generate session_id from cwd if not provided
+    const sessionId = hookData.session_id || hookData.cwd || 'main';
     let agentName = getAgentForSession(sessionId);
 
     // Update agent mapping based on event type
@@ -110,10 +157,10 @@ async function main() {
       agentName = hookData.tool_input.subagent_type;
       setAgentForSession(sessionId, agentName);
     } else if (eventType === 'SubagentStop' || eventType === 'Stop') {
-      agentName = process.env.DA || 'main';
+      agentName = process.env.DA || 'kiro';
       setAgentForSession(sessionId, agentName);
-    } else if (process.env.CLAUDE_CODE_AGENT) {
-      agentName = process.env.CLAUDE_CODE_AGENT;
+    } else if (process.env.PAI_AGENT) {
+      agentName = process.env.PAI_AGENT;
       setAgentForSession(sessionId, agentName);
     } else if (hookData.agent_type) {
       agentName = hookData.agent_type;
@@ -122,7 +169,7 @@ async function main() {
 
     let event: HookEvent = {
       source_app: agentName,
-      session_id: hookData.session_id || 'main',
+      session_id: sessionId,
       hook_event_type: eventType,
       payload: hookData,
       timestamp: Date.now(),
@@ -138,8 +185,12 @@ async function main() {
     const eventsFile = getEventsFilePath();
     const jsonLine = JSON.stringify(event) + '\n';
     appendFileSync(eventsFile, jsonLine, 'utf-8');
+    debugLog('Written to events file', eventsFile);
 
-    // Send to observability server (non-blocking, fails silently)
+    // Send to observability server
+    const observabilityUrl = process.env.PAI_OBSERVABILITY_URL || 'http://localhost:4000/events';
+    debugLog('Sending to observability', observabilityUrl);
+
     await sendEventToObservability({
       source_app: event.source_app,
       session_id: event.session_id,
@@ -150,7 +201,10 @@ async function main() {
       agent_type: agentName
     });
 
+    debugLog('Event sent successfully');
+
   } catch (error) {
+    debugLog('Event capture error', { error: String(error), stack: (error as Error).stack });
     console.error('Event capture error:', error);
   }
 
