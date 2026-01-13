@@ -54,5 +54,5 @@ export function getCurrentTimestamp(): string {
  * Helper to get source app name from environment
  */
 export function getSourceApp(): string {
-  return process.env.PAI_SOURCE_APP || process.env.DA || 'PaiLang';
+  return process.env.KIRO_SOURCE_APP || process.env.DA || 'PaiLang';
 }

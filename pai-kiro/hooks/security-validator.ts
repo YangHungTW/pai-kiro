@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// ~/.claude/hooks/security-validator.ts
+// ~/.kiro/hooks/security-validator.ts
 // PreToolUse hook: Validates commands and blocks dangerous operations
 
 import { sendEventToObservability, getCurrentTimestamp, getSourceApp } from './lib/observability';
@@ -127,15 +127,16 @@ const ATTACK_PATTERNS = {
     message: '🚨 BLOCKED: Data exfiltration pattern detected'
   },
 
-  // Tier 10: PAI-specific protection - Block
-  paiProtection: {
+  // Tier 10: Kiro/PAI-specific protection - Block
+  kiroProtection: {
     patterns: [
+      /rm.*\.kiro/i,                               // Delete Kiro config
       /rm.*\.config\/pai/i,                        // Delete PAI config
       /rm.*\.claude/i,                             // Delete Claude config
       /git\s+push.*PAI.*public/i,                  // Push PAI to public
     ],
     action: 'block',
-    message: '🚨 BLOCKED: PAI infrastructure protection triggered'
+    message: '🚨 BLOCKED: Kiro infrastructure protection triggered'
   }
 };
 

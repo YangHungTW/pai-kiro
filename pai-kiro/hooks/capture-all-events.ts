@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// $PAI_DIR/hooks/capture-all-events.ts
+// ~/.kiro/hooks/capture-all-events.ts
 // Captures ALL Kiro CLI hook events to JSONL
 
 import { readFileSync, appendFileSync, mkdirSync, existsSync, writeFileSync } from 'fs';
@@ -35,7 +35,7 @@ function getLocalTimestamp(): string {
 }
 
 function getEventsFilePath(): string {
-  const paiDir = process.env.PAI_DIR || join(homedir(), '.config', 'pai');
+  const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
   const now = new Date();
   const tz = process.env.TIME_ZONE || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const localDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
@@ -44,7 +44,7 @@ function getEventsFilePath(): string {
   const month = String(localDate.getMonth() + 1).padStart(2, '0');
   const day = String(localDate.getDate()).padStart(2, '0');
 
-  const monthDir = join(paiDir, 'history', 'raw-outputs', `${year}-${month}`);
+  const monthDir = join(kiroDir, 'memory', 'history', 'raw-outputs', `${year}-${month}`);
 
   if (!existsSync(monthDir)) {
     mkdirSync(monthDir, { recursive: true });
@@ -54,8 +54,8 @@ function getEventsFilePath(): string {
 }
 
 function getSessionMappingFile(): string {
-  const paiDir = process.env.PAI_DIR || join(homedir(), '.config', 'pai');
-  return join(paiDir, 'agent-sessions.json');
+  const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
+  return join(kiroDir, 'agent-sessions.json');
 }
 
 function getAgentForSession(sessionId: string): string {

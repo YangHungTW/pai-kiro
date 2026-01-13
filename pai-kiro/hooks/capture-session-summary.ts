@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// $PAI_DIR/hooks/capture-session-summary.ts
+// ~/.kiro/hooks/capture-session-summary.ts
 // Creates session summary when Kiro CLI session ends
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync, readdirSync } from 'fs';
@@ -47,8 +47,8 @@ function determineSessionFocus(filesChanged: string[], commandsExecuted: string[
 }
 
 async function analyzeSession(conversationId: string, yearMonth: string): Promise<any> {
-  const paiDir = process.env.PAI_DIR || join(homedir(), '.config', 'pai');
-  const rawOutputsDir = join(paiDir, 'history', 'raw-outputs', yearMonth);
+  const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
+  const rawOutputsDir = join(kiroDir, 'memory', 'history', 'raw-outputs', yearMonth);
 
   let filesChanged: string[] = [];
   let commandsExecuted: string[] = [];
@@ -96,8 +96,8 @@ async function main() {
     if (!input.trim()) process.exit(0);
 
     const data: SessionData = JSON.parse(input);
-    const paiDir = process.env.PAI_DIR || join(homedir(), '.config', 'pai');
-    const historyDir = join(paiDir, 'history');
+    const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
+    const historyDir = join(kiroDir, 'memory', 'history');
 
     const now = new Date();
     const timestamp = now.toISOString().replace(/[-:]/g, '').split('.')[0];

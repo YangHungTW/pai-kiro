@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// $PAI_DIR/hooks/subagent-stop-hook.ts
+// ~/.kiro/hooks/subagent-stop-hook.ts
 // Routes subagent outputs to appropriate history directories
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'fs';
@@ -121,8 +121,8 @@ async function captureAgentOutput(
   taskOutput: string,
   transcriptPath: string
 ) {
-  const paiDir = process.env.PAI_DIR || join(homedir(), '.config', 'pai');
-  const historyDir = join(paiDir, 'history');
+  const kiroDir = process.env.KIRO_DIR || join(homedir(), '.kiro');
+  const historyDir = join(kiroDir, 'memory', 'history');
 
   const now = new Date();
   const timestamp = now.toISOString().replace(/[-:]/g, '').split('.')[0];

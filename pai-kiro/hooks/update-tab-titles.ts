@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// ~/.claude/hooks/update-tab-titles.ts
+// ~/.kiro/hooks/update-tab-titles.ts
 // UserPromptSubmit hook: Update terminal tab title with task context
 
 interface UserPromptPayload {

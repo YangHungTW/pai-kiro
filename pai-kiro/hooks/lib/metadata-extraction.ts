@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// $PAI_DIR/hooks/lib/metadata-extraction.ts
+// ~/.kiro/hooks/lib/metadata-extraction.ts
 // Extracts agent instance metadata from Task tool calls
 
 export interface AgentInstanceMetadata {
