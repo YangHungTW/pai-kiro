@@ -23,12 +23,22 @@
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/load-core-context.ts"],
         "timeout_ms": 10000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "SessionStart"],
+        "timeout_ms": 5000
       }
     ],
     "userPromptSubmit": [
       {
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/update-tab-titles.ts"],
+        "timeout_ms": 5000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "UserPromptSubmit"],
         "timeout_ms": 5000
       }
     ],
@@ -38,6 +48,18 @@
         "args": ["run", "$HOME/.kiro/hooks/security-validator.ts"],
         "matcher": "shell",
         "timeout_ms": 5000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "PreToolUse"],
+        "timeout_ms": 5000
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "PostToolUse"],
+        "timeout_ms": 5000
       }
     ],
     "stop": [
@@ -45,6 +67,35 @@
         "command": "bun",
         "args": ["run", "$HOME/.kiro/hooks/stop-hook.ts"],
         "timeout_ms": 10000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "Stop"],
+        "timeout_ms": 5000
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/subagent-stop-hook.ts"],
+        "timeout_ms": 10000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "SubagentStop"],
+        "timeout_ms": 5000
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-session-summary.ts"],
+        "timeout_ms": 10000
+      },
+      {
+        "command": "bun",
+        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "SessionEnd"],
+        "timeout_ms": 5000
       }
     ]
   }
