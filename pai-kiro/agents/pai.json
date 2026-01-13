@@ -15,63 +15,43 @@
   "hooks": {
     "agentSpawn": [
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/initialize-session.ts"],
-        "timeout_ms": 10000
+        "command": "bun run ~/.kiro/hooks/initialize-session.ts"
       },
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/load-core-context.ts"],
-        "timeout_ms": 10000
+        "command": "bun run ~/.kiro/hooks/load-core-context.ts"
       },
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "SessionStart"],
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/capture-all-events.ts --event-type SessionStart"
       }
     ],
     "userPromptSubmit": [
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/update-tab-titles.ts"],
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/update-tab-titles.ts"
       },
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "UserPromptSubmit"],
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/capture-all-events.ts --event-type UserPromptSubmit"
       }
     ],
     "preToolUse": [
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/security-validator.ts"],
         "matcher": "shell",
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/security-validator.ts"
       },
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "PreToolUse"],
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/capture-all-events.ts --event-type PreToolUse"
       }
     ],
     "postToolUse": [
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "PostToolUse"],
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/capture-all-events.ts --event-type PostToolUse"
       }
     ],
     "stop": [
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/stop-hook.ts"],
-        "timeout_ms": 10000
+        "command": "bun run ~/.kiro/hooks/stop-hook.ts"
       },
       {
-        "command": "bun",
-        "args": ["run", "$HOME/.kiro/hooks/capture-all-events.ts", "--event-type", "Stop"],
-        "timeout_ms": 5000
+        "command": "bun run ~/.kiro/hooks/capture-all-events.ts --event-type Stop"
       }
     ]
   }
