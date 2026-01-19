@@ -26,6 +26,9 @@
     ],
     "userPromptSubmit": [
       {
+        "command": "bun run ~/.kiro/hooks/ExplicitRatingCapture.hook.ts"
+      },
+      {
         "command": "bun run ~/.kiro/hooks/update-tab-titles.ts"
       },
       {

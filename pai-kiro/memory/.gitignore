@@ -1,17 +1,19 @@
 # Ignore actual session data (may contain sensitive info)
 history/sessions/**/*.md
-history/learnings/**/*.md
 history/decisions/**/*.md
 history/research/**/*.md
 
-# Ignore learning data
-learning/**/*.md
-
-# Ignore signals (contains patterns from usage)
-signals/*.jsonl
+# Ignore LEARNING data (contains insights from usage)
+LEARNING/SYSTEM/**/*.md
+LEARNING/ALGORITHM/**/*.md
+LEARNING/SYNTHESIS/**/*.md
+LEARNING/SIGNALS/*.jsonl
 
 # Ignore work directories (task-specific data)
 work/*/
+
+# Ignore old backup directories
+_old_*
 
 # Keep .gitkeep files to preserve directory structure
 !**/.gitkeep
